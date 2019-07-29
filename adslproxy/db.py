@@ -73,7 +73,8 @@ class RedisClient(object):
         :return:
         """
         proxies = self.proxies()
-        return random.choice(proxies)
+        if proxies:
+            return random.choice(proxies)
 
     def all(self):
         """
