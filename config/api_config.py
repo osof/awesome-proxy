@@ -10,6 +10,7 @@ REDIS_PORT = 6379
 REDIS_PASSWORD = ''
 PROXY_KEY = 'adslproxy'
 
+# API Config
 ADSL_CLIENT_NAME = 'adsl1'
 API_HOST = '127.0.0.1'
 API_PORT = '5001'

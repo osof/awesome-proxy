@@ -8,7 +8,7 @@ import os
 from urllib import request
 
 # 代理服务器账户
-proxy_host = '114.115.166.201'
+proxy_host = '127.0.0.1'
 proxy_user = 'myproxy'
 proxy_passwd = 'N2PYOnRDk5gKInqQ'
 proxy_port = 3100

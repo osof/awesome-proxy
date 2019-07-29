@@ -9,6 +9,7 @@ import sys
 from flask import Flask
 from flask import jsonify
 from flask import request
+from adslproxy.tasks import task_main
 
 sys.path.append('../')
 
@@ -98,5 +99,8 @@ def run():
 
 
 if __name__ == '__main__':
+    # 执行拨号、服务器检测
+    task_main()
+    # 启动接口
     run()
 

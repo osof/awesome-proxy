@@ -7,3 +7,5 @@
 # TODO：拨号，服务器初始化
 
 
+def task_main():
+    pass
