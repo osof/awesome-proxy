@@ -36,7 +36,7 @@ HOSTS_LIST = {
     },
 
     "group3": {
-        "xx_adsl": {"host": "114.115.166.201", "username": "root", "password": "Admin@kylinstudio", "port": 22, "switch_time": 60},
+        "xx_adsl": {"host": "xxxxx", "username": "root", "password": "xxxxxx", "port": 22, "switch_time": 60},
     }
 }
 
