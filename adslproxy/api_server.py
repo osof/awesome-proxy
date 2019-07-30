@@ -32,7 +32,7 @@ api_list = {
 def index():
     html = ''
     for key, values in api_list.items():
-        html += f'<a href={key}>{values}</a><br><br>'
+        html += f'<span>{key}: <a href={key}>{values}</a></span><br><br>'
     return html, 200
 
 
