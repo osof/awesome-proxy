@@ -36,7 +36,7 @@ def depoly_monitor(host_info):
 
 
 def main():
-    for i in HOSTS_LIST['group3'].values():
+    for i in HOSTS_GROUP['group1'].values():
         print(type(i), i)
         depoly_monitor(i)
 

@@ -5,8 +5,8 @@
 
 
 # Redis Config
-REDIS_HOST = '127.0.0.1'
-REDIS_PORT = 6379
+REDIS_HOST = '114.115.166.201'
+REDIS_PORT = 6390
 REDIS_PASSWORD = ''
 PROXY_KEY = 'adslproxy'
 

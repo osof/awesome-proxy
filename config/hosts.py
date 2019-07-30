@@ -22,22 +22,12 @@
 #     }
 # ]
 
-HOSTS_LIST = {
+HOSTS_GROUP = {
     "group1": {  # 分组1
-        "my_adsl1": {"host": "192.168.1.1", "username": "11", "password": "aa", "port": 22, "switch_time": 60},
-        "my_adsl2": {"host": "192.168.1.2", "username": "22", "password": "bb", "port": 22, "switch_time": 60},
-        "my_adsl3": {"host": "192.168.1.3", "username": "33", "password": "cc", "port": 22, "switch_time": 60},
+        "ssh2": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 44, "switch_time": 60},
+        "ssh3": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 55, "switch_time": 60},
+        "ssh4": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 66, "switch_time": 60},
     },
-
-    "group2": {  # 分组2
-        "my_adsla": {"host": "192.168.1.5", "username": "11", "password": "aa", "port": 22, "switch_time": 60},
-        "my_adslb": {"host": "192.168.1.6", "username": "22", "password": "bb", "port": 22, "switch_time": 60},
-        "my_adslc": {"host": "192.168.1.7", "username": "33", "password": "cc", "port": 22, "switch_time": 60},
-    },
-
-    "group3": {
-        "xx_adsl": {"host": "xxxxx", "username": "root", "password": "xxxxxx", "port": 22, "switch_time": 60},
-    }
 }
 
 # for i in HOSTS_LIST['group3'].values():
