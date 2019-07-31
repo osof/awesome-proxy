@@ -1,72 +1,44 @@
 #!/usr/bin/env python3
 # -*-coding:utf-8-*-
 # @Version: Python 3
-# 执行初始化、拨号等任务
+# 定时任务、拨号(每次启动程序都执行本脚本)
 
 
-# TODO：拨号，服务器初始化
-
-import os
+import paramiko
+import threading
 from config.hosts import *
-from fabric import Connection
+from config.api_config import *
+from adslproxy.hosts_managers import pppoe
 from adslproxy.db import RedisClient
 
 redis_cli = RedisClient()
 
 
-def check_host(ssh_cli):
-    # redis_cli.get(nickname)
-    try:
-        ssh_cli.run('squid -v|grep Version')
-        # squid是正常的，重启防假死、程序已崩溃
-        ssh_cli.run('/usr/sbin/service squid restart')
-        print('重启成功')
-    except Exception:
-        # 系统中没有安装squid
-        ssh_cli.put('../script-sh/squid.sh') # 覆盖目标文件
-        ssh_cli.run('chmod +x squid.sh && ./squid.sh')
-
-
-
-
-
-
-
-def task_main():
+def adsl_switch_ip():
+    # 开始拨号（从拨号到IP可用有一定时间间隔，不要用异步，防止短时间内无IP可用）
+    # 一启动先拨号一次号，保存所有主机的代理IP
     for _group in HOSTS_GROUP:
         host_list = HOSTS_GROUP.get(_group)
         for key, values in host_list.items():
-            # print(key, values)
-            ssh_cli = Connection(f"{values['username']}@{values['host']}", port=values['port'],
-                                 connect_kwargs={"password": values['password']})
-            with ssh_cli.cd('/root'):
-                check_host(ssh_cli)
-                # 获取外网地址
-                proxy_ip = ssh_cli.run('curl http://members.3322.org/dyndns/getip')
-                print(proxy_ip)
+            with paramiko.SSHClient() as ssh_cli:
+                ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh_cli.connect(hostname=values['host'], username=values['username'],
+                                password=values['password'],
+                                port=values['port'])
+                proxy_ip = pppoe(ssh_cli)
+                # 存储到Redis
+                redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+    # 间隔ADSL_SWITCH_TIME 时间再次执行
+    timer = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
+    timer.start()
 
 
-
-# from fabric.group import Group, SerialGroup
-# def task2():
-#     task_list = []
-#     for _group in HOSTS_GROUP:
-#         host_list = HOSTS_GROUP.get(_group)
-#         for key, values in host_list.items():
-#             # print(key, values)
-#             key = Connection(f"{values['username']}@{values['host']}", port=values['port'],
-#                                  connect_kwargs={"password": values['password']})
-#             task_list.append(key)
-#     print("task_list", task_list)
-#     group = SerialGroup(task_list)
-#     results = group.run("pwd")
-#     print(results)
+def adsl_main():
+    # 清空Redis中的代理
+    redis_cli.delete()
+    timer = threading.Timer(0, adsl_switch_ip)
+    timer.start()
 
 
-
-if __name__ == '__main__':
-    task_main()
-    # task2()
-    # import sys
-    # os.system('cat ../script-sh/squid.sh')
-    # print(f'{os.getcwd()}/../script-sh')
+if __name__ == "__main__":
+    adsl_main()

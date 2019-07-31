@@ -52,6 +52,13 @@ class RedisClient(object):
         """
         return self.db.hdel(self.proxy_key, name)
 
+    def delete(self):
+        """
+        删除代理池
+        :return: None
+        """
+        return self.db.delete(self.proxy_key)
+
     def names(self):
         """
         获取主机名称列表
@@ -82,8 +89,3 @@ class RedisClient(object):
         """
         return self.db.hgetall(self.proxy_key)
 
-
-
-# redis_cli = RedisClient()
-# s = redis_cli.remove('adsl1')
-# print(s)

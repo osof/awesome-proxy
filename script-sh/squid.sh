@@ -1,10 +1,37 @@
 #!/bin/bash
 # squid安装脚本
 
-# 代理服务器账户
-proxy_user='myproxy'
-proxy_passwd='N2PYOnRDk5gKInqQ'
-proxy_port=3100
+# 代理服务器账户(不要修改，只需在配置文件中配置，程序自动修改)
+squid_proxy_user=myproxy
+squid_proxy_passwd=N2PYOnRDk5gKInqQ
+squid_proxy_port=3100
+
+
+check_os_type(){
+        # Get OS Type
+    if [ -e /etc/redhat-release ]; then
+      OS=CentOS
+      PM=yum
+    elif [ -n "$(grep 'Amazon Linux' /etc/issue)" -o -n "$(grep 'Amazon Linux' /etc/os-release)" ]; then
+      OS=CentOS
+      PM=yum
+    elif [ -n "$(grep 'bian' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Debian" ]; then
+      OS=Debian
+      PM=apt
+    elif [ -n "$(grep 'Deepin' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Deepin" ]; then
+      OS=Debian
+      PM=apt
+    elif [ -n "$(grep -w 'Kali' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Kali" ]; then
+      OS=Debian
+      PM=apt
+    elif [ -n "$(grep 'Ubuntu' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Ubuntu" -o -n "$(grep 'Linux Mint' /etc/issue)" ]; then
+      OS=Ubuntu
+      PM=apt
+    elif [ -n "$(grep 'elementary' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == 'elementary' ]; then
+      OS=Ubuntu
+      PM=apt
+    fi
+}
 
 
 
@@ -40,18 +67,17 @@ yum_squid(){
     echo 'auth_param basic realm proxy' >> ${conf_path}/squid.conf
     echo 'acl authenticated proxy_auth REQUIRED' >> ${conf_path}/squid.conf
     echo 'http_access allow authenticated' >> ${conf_path}/squid.conf   # 允许所有认证通过的客户端
-    sed -i "s/http_port 3128/http_port ${proxy_port}/g" ${conf_path}/squid.conf
+    sed -i "s/http_port 3128/http_port ${squid_proxy_port}/g" ${conf_path}/squid.conf
     sed -i "s/http_access deny all/#http_access deny all/g" ${conf_path}/squid.conf
     # 高匿设置
     echo 'request_header_access Via deny all' >> ${conf_path}/squid.conf
     echo 'request_header_access X-Forwarded-For deny all' >> ${conf_path}/squid.conf
     # 生成密钥
-    htpasswd -bc  ${conf_path}/passwords ${proxy_user} ${proxy_passwd}
+    htpasswd -bc  ${conf_path}/passwords ${squid_proxy_user} ${squid_proxy_passwd}
     chmod o+r ${conf_path}/passwords
     systemctl enable squid
-    systemctl restart squid
+    start_squid
 }
-
 
 
 apt_squid(){
@@ -61,64 +87,68 @@ apt_squid(){
     if [ "${OS}" == 'Ubuntu' ]; then
         conf_path=/etc/squid3
         basic_auth=/usr/lib/squid3
-        start_squid="sed -i '/By default this script does nothing/a\squid3' /etc/rc.local && pgrep squid3 |xargs kill -9 && squid3"
+        start_squid="sed -i '/By default this script does nothing/a\squid3' /etc/rc.local"
     elif [ "${OS}" == 'Debian' ]; then
         conf_path=/etc/squid
         basic_auth=/usr/lib/squid
-        start_squid="service squid enable && service squid restart"
+        start_squid="service squid enable"
     fi
     echo "auth_param basic program ${basic_auth}/basic_ncsa_auth /etc/squid/passwords" >> ${conf_path}/squid.conf
     echo 'auth_param basic realm proxy' >> ${conf_path}/squid.conf
     echo 'acl authenticated proxy_auth REQUIRED' >> ${conf_path}/squid.conf
     echo 'http_access allow authenticated' >> ${conf_path}/squid.conf   # 允许所有认证通过的客户端
-    sed -i "s/http_port 3128/http_port ${proxy_port}/g" ${conf_path}/squid.conf
+    sed -i "s/http_port 3128/http_port ${squid_proxy_port}/g" ${conf_path}/squid.conf
     sed -i "s/http_access deny all/#http_access deny all/g" ${conf_path}/squid.conf
     # 高匿设置
     echo 'request_header_access Via deny all' >> ${conf_path}/squid.conf
     echo 'request_header_access X-Forwarded-For deny all' >> ${conf_path}/squid.conf
     # 生成密钥
-    htpasswd -bc  ${conf_path}/passwords ${proxy_user} ${proxy_passwd}
+    htpasswd -bc  ${conf_path}/passwords ${squid_proxy_user} ${squid_proxy_passwd}
     chmod o+r ${conf_path}/passwords
     ${start_squid}
+    start_squid
+}
+
+
+start_squid(){
+    # 重启Squid
+    if [ "${OS}" == 'CentOS' ]; then
+        systemctl restart squid
+    elif [ "${OS}" == 'Ubuntu' ]; then
+        pgrep squid3 |xargs kill -9 && sleep 1 && squid3
+    elif [ "${OS}" == 'Debian' ]; then
+        service squid restart
+    fi
+}
+
+
+
+install_squid(){
+    if [ "${OS}" == 'CentOS' ]; then
+        init_sys
+        yum_squid
+    elif [ "${OS}" == 'Ubuntu' ]; then
+        init_sys
+        apt_squid
+    elif [ "${OS}" == 'Debian' ]; then
+        init_sys
+        apt_squid
+    fi
 }
 
 
 
 
-# Get OS Type
-if [ -e /etc/redhat-release ]; then
-  OS=CentOS
-  PM=yum
-  init_sys
-  yum_squid
-elif [ -n "$(grep 'Amazon Linux' /etc/issue)" -o -n "$(grep 'Amazon Linux' /etc/os-release)" ]; then
-  OS=CentOS
-  PM=yum
-  init_sys
-  yum_squid
-elif [ -n "$(grep 'bian' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Debian" ]; then
-  OS=Debian
-  PM=apt
-  init_sys
-  apt_squid
-elif [ -n "$(grep 'Deepin' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Deepin" ]; then
-  OS=Debian
-  PM=apt
-  init_sys
-  apt_squid
-elif [ -n "$(grep -w 'Kali' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Kali" ]; then
-  OS=Debian
-  PM=apt
-  init_sys
-  apt_squid
-elif [ -n "$(grep 'Ubuntu' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == "Ubuntu" -o -n "$(grep 'Linux Mint' /etc/issue)" ]; then
-  OS=Ubuntu
-  PM=apt
-  init_sys
-  apt_squid
-elif [ -n "$(grep 'elementary' /etc/issue)" -o "$(lsb_release -is 2>/dev/null)" == 'elementary' ]; then
-  OS=Ubuntu
-  PM=apt
-  init_sys
-  apt_squid
-fi
+case "${1}" in
+  install)
+    check_os_type
+    install_squid
+    ;;
+  restart)
+    check_os_type
+    start_squid
+    ;;
+  *)
+    echo "请使用 $0 [install|restart] 执行脚本！"
+    ;;
+esac

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # -*-coding:utf-8-*-
 # @Version: Python 3
-# API接口服务
+# API接口服务(每次启动程序都执行本脚本)
 
 # TODO：这里用Flask写接口服务
-# coding=utf-8
+
 import sys
 from flask import Flask
 from flask import jsonify
 from flask import request
-from adslproxy.tasks import task_main
+from adslproxy.hosts_managers import task_main
 
 sys.path.append('../')
 

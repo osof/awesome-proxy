@@ -20,18 +20,18 @@ https://www.fabfile.org/installing.html
 def depoly_monitor(host_info):
     with paramiko.SSHClient() as client:
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        print(host_info['password'])
+        #print(host_info['password'])
         client.connect(hostname=host_info['host'], username=host_info['username'], password=host_info['password'],
                        port=host_info['port'])
 
-        stdin, stdout, stderr = client.exec_command('ls -l')
-        print(stdout.readlines())
+        # stdin, stdout, stderr = client.exec_command('ls -l')
+        # print(stdout.readlines())
 
-        with client.open_sftp() as sftp:
-            sftp.put('123.sh', '123.sh')
-            sftp.chmod('123.sh', 0o755)
+        # with client.open_sftp() as sftp:
+        #     sftp.put('123.sh', '123.sh')
+        #     sftp.chmod('123.sh', 0o755)
 
-        stdin, stdout, stderr = client.exec_command('./123.sh')
+        stdin, stdout, stderr = client.exec_command('curl http://members.3322.org/dyndns/getip')
         print(stdout.readlines())
 
 
