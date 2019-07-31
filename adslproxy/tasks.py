@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 # -*-coding:utf-8-*-
 # @Version: Python 3
-# 定时任务、拨号(每次启动程序都执行本脚本)
+# 定时任务、拨号(每次启动程序都执行本脚本，一直执行)
 
 
 import paramiko
 import threading
 from config.hosts import *
 from config.api_config import *
-from adslproxy.hosts_managers import pppoe
+from adslproxy.hosts_managers import pppoe, task_main
 from adslproxy.db import RedisClient
 
 redis_cli = RedisClient()
@@ -16,7 +16,6 @@ redis_cli = RedisClient()
 
 def adsl_switch_ip():
     # 开始拨号（从拨号到IP可用有一定时间间隔，不要用异步，防止短时间内无IP可用）
-    # 一启动先拨号一次号，保存所有主机的代理IP
     for _group in HOSTS_GROUP:
         host_list = HOSTS_GROUP.get(_group)
         for key, values in host_list.items():
@@ -34,11 +33,13 @@ def adsl_switch_ip():
 
 
 def adsl_main():
-    # 清空Redis中的代理
-    redis_cli.delete()
-    timer = threading.Timer(0, adsl_switch_ip)
+    # hosts_manages启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
+    timer = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
     timer.start()
 
 
 if __name__ == "__main__":
+    # task_main启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
+    task_main()
+    # 开始定时拨号任务
     adsl_main()

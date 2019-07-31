@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 # -*-coding:utf-8-*-
 # @Version: Python 3
-# 执行初始化、主机管理
+# 执行初始化、主机管理(每次启动程序都执行本脚本，一次性执行)
 
-
-# TODO：修改为多线程，拨号程序
 
 import os
 import re
 import time
+import threading
 import paramiko
 from config.hosts import *
 from config.api_config import *
@@ -65,22 +64,31 @@ def check_host(ssh_cli):
         ssh_cli.exec_command('chmod +x squid.sh && ./squid.sh install')
 
 
+def run_task(key, values):
+    # print(threading.currentThread().getName())
+    with paramiko.SSHClient() as ssh_cli:
+        ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_cli.connect(hostname=values['host'], username=values['username'],
+                        password=values['password'],
+                        port=values['port'])
+        # 检查squid
+        check_host(ssh_cli)
+        # 开始拨号
+        proxy_ip = pppoe(ssh_cli)
+        # 存储到Redis
+        redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+
+
 def task_main():
+    # 清空Redis中的代理
+    redis_cli.delete()
+    # 一启动先拨号一次号，保存所有主机的代理IP
     # 主机管理(启动程序时会检查并配置所有主机)
     for _group in HOSTS_GROUP:
         host_list = HOSTS_GROUP.get(_group)
         for key, values in host_list.items():
-            with paramiko.SSHClient() as ssh_cli:
-                ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh_cli.connect(hostname=values['host'], username=values['username'],
-                                password=values['password'],
-                                port=values['port'])
-                # 检查squid
-                check_host(ssh_cli)
-                # 开始拨号
-                proxy_ip = pppoe(ssh_cli)
-                # 存储到Redis
-                redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+            t = threading.Thread(target=run_task, args=(key, values))
+            t.start()
 
 
 if __name__ == '__main__':

@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 # -*-coding:utf-8-*-
 # @Version: Python 3
-# API接口服务(每次启动程序都执行本脚本)
+# API接口服务(每次启动程序都执行本脚本，一直执行)
 
-# TODO：这里用Flask写接口服务
 
+import os
 import sys
+
+# 获取当前文件的上级目录(项目根目录)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(ROOT_DIR)
+
 from flask import Flask
 from flask import jsonify
 from flask import request
-from adslproxy.hosts_managers import task_main
-
-sys.path.append('../')
-
 from config.api_config import *
 from adslproxy.db import RedisClient
+from adslproxy.hosts_managers import task_main
 
 app = Flask(__name__)
 redis_cli = RedisClient()
@@ -94,13 +96,8 @@ def get_all():
         return 'no adsl', 400
 
 
-def run():
-    app.run(host=API_HOST, port=API_PORT, debug=True)
-
-
 if __name__ == '__main__':
-    # 执行拨号、服务器检测
-    task_main()
     # 启动接口
-    run()
-
+    # app.run(host=API_HOST, port=API_PORT, debug=True)
+    # gunicorn方式启动
+    os.system('gunicorn -w 4 -b 0.0.0.0:80 -k gevent api_server:app')
