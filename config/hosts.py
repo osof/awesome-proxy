@@ -24,9 +24,9 @@
 
 HOSTS_GROUP = {
     "group1": {  # 分组1
-        "ssh2": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 44, "switch_time": 60},
+        # "ssh2": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 44, "switch_time": 60},
         "ssh3": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 55, "switch_time": 60},
-        "ssh4": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 66, "switch_time": 60},
+        # "ssh4": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 66, "switch_time": 60},
     },
 }
 

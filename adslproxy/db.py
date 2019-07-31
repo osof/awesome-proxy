@@ -81,3 +81,9 @@ class RedisClient(object):
         :return:
         """
         return self.db.hgetall(self.proxy_key)
+
+
+
+# redis_cli = RedisClient()
+# s = redis_cli.remove('adsl1')
+# print(s)
