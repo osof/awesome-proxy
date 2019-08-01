@@ -7,9 +7,20 @@
 import os
 import sys
 
+
+# 无效果
+# import pathlib
+# ROOT_DIR = pathlib.Path.cwd().parent
+# sys.path.append(ROOT_DIR)
+# sys.path.append(ROOT_DIR / 'adslproxy')
+# sys.path.append(ROOT_DIR / 'config')
+
 # 获取当前文件的上级目录(项目根目录)
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.append(ROOT_DIR)
+WORK_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(WORK_DIR)
+sys.path.append(os.path.join(WORK_DIR, 'adslproxy'))
+sys.path.append(os.path.join(WORK_DIR, 'config'))
+
 
 from flask import Flask
 from flask import jsonify

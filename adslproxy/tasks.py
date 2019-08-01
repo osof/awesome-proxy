@@ -4,6 +4,11 @@
 # 定时任务、拨号(每次启动程序都执行本脚本，一直执行)
 
 
+import os
+import sys
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+sys.path.append(ROOT_DIR)
+
 import paramiko
 import threading
 from config.hosts import *
@@ -44,7 +49,7 @@ def adsl_main():
 
 
 if __name__ == "__main__":
-    # task_main启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
-    hosts_init()
+    # hosts_init启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
+    hosts_init()  # join线程阻塞（配置环境需要时间，只花最慢一台机器的时间）
     # 开始定时拨号任务
     adsl_main()

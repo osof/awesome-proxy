@@ -10,14 +10,14 @@ PROXY_PASSWORD = 'N2PYOnRDk5gKInqQ'
 PROXY_PORT = 3100
 
 # Redis Config
-REDIS_HOST = '114.115.166.201'
-REDIS_PORT = 6390
-REDIS_PASSWORD = ''
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379
+REDIS_PASSWORD = '123456'
 PROXY_KEY = 'adslproxy'
 
 # API Config
 API_HOST = '0.0.0.0'
-API_PORT = '8080'
+API_PORT = 8080
 """
 整体设计：
 1、IP_INVALID_TIME： IP不能用废，本程序配置一个IP可以使用多久，之后必须更换IP，有利于多人使用IP但不被封；
@@ -32,3 +32,5 @@ IP_INVALID_TIME = 60
 # ADSL切换IP的时间（秒），同时更新Redis（注意：每次拨号时大约要8秒左右新IP才可用，服务商限制！）
 ADSL_SWITCH_TIME = 3600 * 3
 
+
+# Dockerfile Config
