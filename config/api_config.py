@@ -16,8 +16,8 @@ REDIS_PASSWORD = ''
 PROXY_KEY = 'adslproxy'
 
 # API Config
-API_HOST = '127.0.0.1'
-API_PORT = '5001'
+API_HOST = '0.0.0.0'
+API_PORT = '8080'
 """
 整体设计：
 1、IP_INVALID_TIME： IP不能用废，本程序配置一个IP可以使用多久，之后必须更换IP，有利于多人使用IP但不被封；

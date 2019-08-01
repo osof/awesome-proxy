@@ -3,7 +3,7 @@
 
 
 #下载基本镜像
-#安装基本软件
+#安装基本软件，redis
 #安装req
 #修改配置
 #启动服务器
@@ -17,3 +17,6 @@
 
 
 # gunicorn -w 4 -b 0.0.0.0:80 -k gevent api_server:app
+
+
+FROM python:3.7.4

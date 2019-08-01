@@ -16,7 +16,6 @@ from flask import jsonify
 from flask import request
 from config.api_config import *
 from adslproxy.db import RedisClient
-from adslproxy.hosts_managers import task_main
 
 app = Flask(__name__)
 redis_cli = RedisClient()
@@ -100,4 +99,4 @@ if __name__ == '__main__':
     # 启动接口
     # app.run(host=API_HOST, port=API_PORT, debug=True)
     # gunicorn方式启动
-    os.system('gunicorn -w 4 -b 0.0.0.0:80 -k gevent api_server:app')
+    os.system(f'gunicorn -w 4 -b {API_HOST}:{API_PORT} -k gevent api_server:app')

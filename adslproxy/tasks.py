@@ -8,7 +8,7 @@ import paramiko
 import threading
 from config.hosts import *
 from config.api_config import *
-from adslproxy.hosts_managers import pppoe, task_main
+from adslproxy.hosts_managers import pppoe, hosts_init
 from adslproxy.db import RedisClient
 
 redis_cli = RedisClient()
@@ -24,7 +24,12 @@ def adsl_switch_ip():
                 ssh_cli.connect(hostname=values['host'], username=values['username'],
                                 password=values['password'],
                                 port=values['port'])
-                proxy_ip = pppoe(ssh_cli)
+                try:
+                    proxy_ip = pppoe(ssh_cli)
+                except Exception:
+                    # TODO:存储到异常主机稍后处理
+                    # redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+                    pass
                 # 存储到Redis
                 redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
     # 间隔ADSL_SWITCH_TIME 时间再次执行
@@ -40,6 +45,6 @@ def adsl_main():
 
 if __name__ == "__main__":
     # task_main启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
-    task_main()
+    hosts_init()
     # 开始定时拨号任务
     adsl_main()

@@ -9,6 +9,7 @@ import re
 import time
 import threading
 import paramiko
+from retrying import retry
 from config.hosts import *
 from config.api_config import *
 from adslproxy.db import RedisClient
@@ -16,14 +17,29 @@ from adslproxy.db import RedisClient
 redis_cli = RedisClient()
 
 
+
+@retry(stop_max_attempt_number=5)
+def get_proxy_ip(ssh_cli):
+    time.sleep(5) # 拨号后要好几秒后才能分配到IP
+    # 获取代理IP(能请求成功说明代理IP有效)，注意stdout只有第一次输出是有效的，再次获取是空的。
+    stdin, stdout, stderr = ssh_cli.exec_command('curl http://members.3322.org/dyndns/getip')
+    proxy_ip = stdout.readlines()
+    if proxy_ip:
+        proxy_ip = proxy_ip[0].strip()
+        return proxy_ip
+    else:
+        raise Exception('获取不到IP，尝试重新获取')
+
+
+@retry(stop_max_attempt_number=5)
 def pppoe(ssh_cli):
     # 拨号程序
-    _stdin, _stdout, _stderr = ssh_cli.exec_command('adsl-stop && sleep 3 && adsl-start')
-    time.sleep(5)
-    # 获取代理IP(能请求成功说明代理IP有效)
-    stdin, stdout, stderr = ssh_cli.exec_command('curl http://members.3322.org/dyndns/getip')
-    proxy_ip = stdout.readlines()[0]
-    return proxy_ip.strip()
+    try:
+        _stdin, _stdout, _stderr = ssh_cli.exec_command('adsl-stop && sleep 3 && adsl-start')
+    except Exception:
+        raise Exception('ADSL 拨号超时，重试中！')
+    return get_proxy_ip(ssh_cli)
+
 
 
 def set_sh_config():
@@ -65,7 +81,8 @@ def check_host(ssh_cli):
 
 
 def run_task(key, values):
-    # print(threading.currentThread().getName())
+    print(threading.currentThread().getName())
+    print('现在处理', key)
     with paramiko.SSHClient() as ssh_cli:
         ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh_cli.connect(hostname=values['host'], username=values['username'],
@@ -74,12 +91,17 @@ def run_task(key, values):
         # 检查squid
         check_host(ssh_cli)
         # 开始拨号
-        proxy_ip = pppoe(ssh_cli)
+        try:
+            proxy_ip = pppoe(ssh_cli)
+        except Exception:
+            # TODO:存储到异常主机稍后处理
+            #redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+            pass
         # 存储到Redis
         redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
 
 
-def task_main():
+def hosts_init():
     # 清空Redis中的代理
     redis_cli.delete()
     # 一启动先拨号一次号，保存所有主机的代理IP
@@ -87,9 +109,10 @@ def task_main():
     for _group in HOSTS_GROUP:
         host_list = HOSTS_GROUP.get(_group)
         for key, values in host_list.items():
+            #run_task(key, values)
             t = threading.Thread(target=run_task, args=(key, values))
             t.start()
 
 
 if __name__ == '__main__':
-    task_main()
+    hosts_init()
