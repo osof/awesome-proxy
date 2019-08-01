@@ -46,12 +46,22 @@ init_sys(){
         sed -i "s/^SELINUX=permissive/SELINUX=disabled/g" /etc/selinux/config
         # 开启包转发
         echo 1 > /proc/sys/net/ipv4/ip_forward
-        echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+        if [ -e /etc/sysctl.conf ]; then
+            # 如果值本身就为1，则不会被修改
+            sed -i "s/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g" /etc/sysctl.conf
+        else
+            echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+        fi
     fi
     if [ "${PM}" == 'apt' ]; then
         # 开启包转发
         echo 1 > /proc/sys/net/ipv4/ip_forward
-        echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+        if [ -e /etc/sysctl.conf ]; then
+            # 如果值本身就为1，则不会被修改
+            sed -i "s/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g" /etc/sysctl.conf
+        else
+            echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+        fi
     fi
 }
 
@@ -110,6 +120,21 @@ apt_squid(){
 }
 
 
+# 删除拨号软件，视服务商而定。
+clean_sys(){
+    if [ "${OS}" == 'CentOS' ]; then
+        yum remove squid -y
+        rm -rf /etc/squid
+    elif [ "${OS}" == 'Ubuntu' ]; then
+        apt-get remove squid3 -y && apt-get autoremove
+        rm -rf /etc/squid3
+    elif [ "${OS}" == 'Debian' ]; then
+        apt-get remove squid -y && apt-get autoremove
+        rm -rf /etc/squid
+    fi
+}
+
+
 start_squid(){
     # 重启Squid
     if [ "${OS}" == 'CentOS' ]; then
@@ -144,11 +169,15 @@ case "${1}" in
     check_os_type
     install_squid
     ;;
+  uninstall)
+    check_os_type
+    clean_sys
+    ;;
   restart)
     check_os_type
     start_squid
     ;;
   *)
-    echo "请使用 $0 [install|restart] 执行脚本！"
+    echo "请使用 $0 [install|uninstall|restart] 执行脚本！"
     ;;
 esac

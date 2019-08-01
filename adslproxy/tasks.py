@@ -6,50 +6,84 @@
 
 import os
 import sys
+
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(ROOT_DIR)
 
+import json
 import paramiko
 import threading
 from config.hosts import *
 from config.api_config import *
-from adslproxy.hosts_managers import pppoe, hosts_init
+from adslproxy.hosts_managers import pppoe, hosts_init, clean_sys, check_host
 from adslproxy.db import RedisClient
 
-redis_cli = RedisClient()
 
-
-def adsl_switch_ip():
-    # 开始拨号（从拨号到IP可用有一定时间间隔，不要用异步，防止短时间内无IP可用）
-    for _group in HOSTS_GROUP:
-        host_list = HOSTS_GROUP.get(_group)
-        for key, values in host_list.items():
+def solve_badhosts():
+    # 处理问题主机，根据问题类型，重装软件或拨号。
+    badhosts_info_dict = RedisClient(list_key='badhosts').all()
+    if badhosts_info_dict:
+        for key, values in badhosts_info_dict.items():
             with paramiko.SSHClient() as ssh_cli:
                 ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh_cli.connect(hostname=values['host'], username=values['username'],
                                 password=values['password'],
                                 port=values['port'])
+                if values['problem'] == 'adsl_error':
+                    # 如果是init_error则重装软件。
+                    clean_sys(ssh_cli)
+                    check_host(ssh_cli)
+                # 开始拨号
                 try:
                     proxy_ip = pppoe(ssh_cli)
                 except Exception:
-                    # TODO:存储到异常主机稍后处理
-                    # redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+                    # 依然有问题，不做操作
                     pass
-                # 存储到Redis
-                redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+                # 如果没问题，加入代理，从问题主机列表移除并添加到正常主机列表
+                RedisClient(list_key='adslproxy').set(key, f'{proxy_ip}:{PROXY_PORT}')
+                RedisClient(list_key='badhosts').remove(key)
+                RedisClient(list_key='goodhosts').set(key, json.dumps(values))
+    # 间隔300秒 时间再次执行
+    t4 = threading.Timer(300, solve_badhosts)
+    t4.start()
+
+
+def adsl_switch_ip():
+    # 定时拨号的主机是从正常的主机中获取的。
+    hosts_info_dict = RedisClient(list_key='goodhosts').all()
+    # 开始拨号（从拨号到IP可用有一定时间间隔，不要用异步，防止短时间内无IP可用）
+    for key, values in hosts_info_dict.items():
+        with paramiko.SSHClient() as ssh_cli:
+            ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_cli.connect(hostname=values['host'], username=values['username'],
+                            password=values['password'],
+                            port=values['port'])
+            try:
+                proxy_ip = pppoe(ssh_cli)
+            except Exception:
+                # 重新拨号得不到新IP，则移除旧IP，且从正常主机列表移除并加入问题主机列表
+                RedisClient(list_key='adslproxy').remove(key)
+                RedisClient(list_key='goodhosts').remove(key)
+                values['problem'] = 'adsl_error'
+                RedisClient(list_key='badhosts').set(key, json.dumps(values))
+            # 存储到Redis
+            RedisClient(list_key='adslproxy').set(key, f'{proxy_ip}:{PROXY_PORT}')
     # 间隔ADSL_SWITCH_TIME 时间再次执行
-    timer = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
-    timer.start()
+    t3 = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
+    t3.start()
 
 
 def adsl_main():
     # hosts_manages启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
-    timer = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
-    timer.start()
+    t1 = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
+    t1.start()
+    # 立刻处理问题主机
+    t2 = threading.Timer(0, solve_badhosts)
+    t2.start()
 
 
 if __name__ == "__main__":
     # hosts_init启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
     hosts_init()  # join线程阻塞（配置环境需要时间，只花最慢一台机器的时间）
-    # 开始定时拨号任务
+    # 开始定时拨号任务，子线程开始等待，不影响下面执行
     adsl_main()

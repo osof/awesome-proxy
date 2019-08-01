@@ -10,10 +10,10 @@ PROXY_PASSWORD = 'N2PYOnRDk5gKInqQ'
 PROXY_PORT = 3100
 
 # Redis Config
-REDIS_HOST = '127.0.0.1'
-REDIS_PORT = 6379
-REDIS_PASSWORD = '123456'
-PROXY_KEY = 'adslproxy'
+REDIS_HOST = '114.115.166.201'
+REDIS_PORT = 6390
+REDIS_PASSWORD = ''
+
 
 # API Config
 API_HOST = '0.0.0.0'
@@ -31,6 +31,3 @@ API_PORT = 8080
 IP_INVALID_TIME = 60
 # ADSL切换IP的时间（秒），同时更新Redis（注意：每次拨号时大约要8秒左右新IP才可用，服务商限制！）
 ADSL_SWITCH_TIME = 3600 * 3
-
-
-# Dockerfile Config

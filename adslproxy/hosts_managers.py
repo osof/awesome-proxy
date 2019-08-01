@@ -7,14 +7,13 @@
 import os
 import re
 import time
+import json
 import threading
 import paramiko
 from retrying import retry
 from config.hosts import *
 from config.api_config import *
 from adslproxy.db import RedisClient
-
-redis_cli = RedisClient()
 
 
 @retry(stop_max_attempt_number=5)
@@ -55,6 +54,19 @@ def set_sh_config():
     return True
 
 
+def clean_sys(ssh_cli):
+    # 清理系统为重装做准备
+    # TODO：重装的包括adsl软件，未完成！
+    try:
+        ssh_cli.exec_command('./squid.sh uninstall')
+    except Exception:
+        # 脚本不存在会报异常，上传后再执行
+        with ssh_cli.open_sftp() as sftp:
+            set_sh_config()  # 上传文件前要更新脚本的配置信息
+            sftp.put('../script-sh/squid.sh', 'squid.sh')
+        ssh_cli.exec_command('./squid.sh uninstall')
+
+
 def check_host(ssh_cli):
     # 检查主机是否有安装squid，并安装好
     try:
@@ -69,16 +81,21 @@ def check_host(ssh_cli):
                 sftp.put('../script-sh/squid.sh', 'squid.sh')
             ssh_cli.exec_command('chmod +x squid.sh && ./squid.sh restart')
     except Exception:
-        # 系统中没有安装squid
-        with ssh_cli.open_sftp() as sftp:
-            set_sh_config()  # 上传文件前要更新脚本的配置信息
-            sftp.put('../script-sh/squid.sh', 'squid.sh')
-        ssh_cli.exec_command('chmod +x squid.sh && ./squid.sh install')
+        # 系统中没有安装squid，尝试安装
+        print('安装squid！')
+        try:
+            ssh_cli.exec_command('./squid.sh install')
+        except Exception:
+            # 脚本不存在，上传后再执行
+            with ssh_cli.open_sftp() as sftp:
+                set_sh_config()  # 上传文件前要更新脚本的配置信息
+                sftp.put('../script-sh/squid.sh', 'squid.sh')
+            ssh_cli.exec_command('chmod +x squid.sh && ./squid.sh install')
 
 
 def run_task(key, values):
-    print(threading.currentThread().getName())
-    print('现在处理', key)
+    # print(threading.currentThread().getName())
+    print('初始化主机：', key)
     with paramiko.SSHClient() as ssh_cli:
         ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh_cli.connect(hostname=values['host'], username=values['username'],
@@ -90,29 +107,37 @@ def run_task(key, values):
         try:
             proxy_ip = pppoe(ssh_cli)
         except Exception:
-            # TODO:存储到异常主机稍后处理
-            # redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
-            pass
+            # 记录初始化错误的主机（只有启动时出现错误的主机才算是初始化错误）
+            values['problem'] = 'init_error'
+            RedisClient(list_key='badhosts').set(key, json.dumps(values))
         # 存储到Redis
-        redis_cli.set(key, f'{proxy_ip}:{PROXY_PORT}')
+        RedisClient(list_key='adslproxy').set(key, f'{proxy_ip}:{PROXY_PORT}')
+        RedisClient(list_key='goodhosts').set(key, json.dumps(values))
 
 
 def hosts_init():
-    # 清空Redis中的代理
-    redis_cli.delete()
+    # 清空Redis中的数据
+    RedisClient(list_key='adslproxy').delete()
+    RedisClient(list_key='goodhosts').delete()
+    RedisClient(list_key='badhosts').delete()
     # 一启动先拨号一次号，保存所有主机的代理IP
     # 主机管理(启动程序时会检查并配置所有主机)
+    thread_list = []
     for _group in HOSTS_GROUP:
         host_list = HOSTS_GROUP.get(_group)
         for key, values in host_list.items():
             # run_task(key, values)
             t = threading.Thread(target=run_task, args=(key, values))
-            t.start()
+            thread_list.append(t)
+    # 开始执行任务
+    for t in thread_list:
+        t.start()
 
-        for t in host_list:
-            # 阻塞线程，等待子线程执行完毕。
-            t.join()
+    for t in thread_list:
+        # 阻塞线程，等待子线程执行完毕。
+        t.join()
 
 
 if __name__ == '__main__':
+    # 启动时只执行一次
     hosts_init()

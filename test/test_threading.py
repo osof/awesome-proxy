@@ -14,10 +14,11 @@ def run():
     print('当前线程的名字是： ', threading.current_thread().name)
     time.sleep(3)
 
+
 def task():
-    time.sleep(1)
+    # time.sleep(1)
     print('任务二')
-    time.sleep(2)
+    # time.sleep(2)
 
 
 if __name__ == '__main__':
@@ -36,6 +37,5 @@ if __name__ == '__main__':
     for t in thread_list:
         t.join()
 
-    task()
     print('主线程结束！', threading.current_thread().name)
-    print('一共用时：', time.time()-start_time)
+    print('一共用时：', time.time() - start_time)

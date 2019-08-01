@@ -7,7 +7,6 @@
 import os
 import sys
 
-
 # 无效果
 # import pathlib
 # ROOT_DIR = pathlib.Path.cwd().parent
@@ -21,7 +20,6 @@ sys.path.append(WORK_DIR)
 sys.path.append(os.path.join(WORK_DIR, 'adslproxy'))
 sys.path.append(os.path.join(WORK_DIR, 'config'))
 
-
 from flask import Flask
 from flask import jsonify
 from flask import request
@@ -29,7 +27,7 @@ from config.api_config import *
 from adslproxy.db import RedisClient
 
 app = Flask(__name__)
-redis_cli = RedisClient()
+redis_cli = RedisClient('adslproxy')
 
 api_list = {
     'random': u'random get an proxy',
