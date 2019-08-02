@@ -3,6 +3,11 @@
 # @Version: Python 3
 # API配置文件
 
+"""
+说明：
+1、账户密码使用英文、数字或混合均可，不要使用特殊符号
+2、字符串同意使用''，不要修改为""；在shell匹配中会出错。
+"""
 
 # 代理服务器统一账户
 PROXY_USER = 'myproxy'
@@ -37,3 +42,15 @@ ADSL_SWITCH_TIME = 3600 * 3
 supervisor_username = 'myadmin'
 supervisor_password = '12345678'
 supervisor_port = 9005
+
+# Logging Config
+import logging
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
+    level=logging.ERROR,
+    datefmt="%H:%M:%S",
+    # stream=sys.stderr,
+    filename='../logs/adsl_server.log',
+)
+logger = logging.getLogger("adsl")
+# logging.getLogger("chardet.charsetprober").disabled = True

@@ -30,8 +30,8 @@ create_dockerfile(){
     # 下面这句sed是匹配地址并替换端口，在Mac上会报错。
     sed -i "s/\(-b 0.0.0.0:\)[0-9]*/\1${api_port}/" config/supervisor.conf
 
-    supervisor_username=`egrep -r "supervisor_username" config/api_config.py |awk {'print $3'}`
-    supervisor_password=`egrep -r "supervisor_password" config/api_config.py |awk {'print $3'}`
+    supervisor_username=`egrep -r "supervisor_username" config/api_config.py |awk -F "'" {'print $2'}`
+    supervisor_password=`egrep -r "supervisor_password" config/api_config.py |awk -F "'" {'print $2'}`
     supervisor_port=`egrep -r "supervisor_port" config/api_config.py |awk {'print $3'}`
     sed -i "s/`egrep -r 'username' config/supervisor.conf |head -n1`/username=${supervisor_username}/g" config/supervisor.conf
     sed -i "s/`egrep -r 'password' config/supervisor.conf |head -n1`/password=${supervisor_password}/g" config/supervisor.conf

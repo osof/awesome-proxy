@@ -26,16 +26,20 @@ def solve_badhosts():
         for key, values in badhosts_info_dict.items():
             with paramiko.SSHClient() as ssh_cli:
                 ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh_cli.connect(hostname=values['host'], username=values['username'],
-                                password=values['password'],
-                                port=values['port'])
+                try:
+                    ssh_cli.connect(hostname=values['host'], username=values['username'],
+                                    password=values['password'],
+                                    port=values['port'])
+                except paramiko.ssh_exception.NoValidConnectionsError as e:
+                    logger.error(f'主机：{key}，配置有问题，请手动修复并重启程序! {e}')
+                    return False
                 if values['problem'] == 'adsl_error':
                     # 如果是init_error则重装软件。
                     clean_sys(ssh_cli)
                     check_host(ssh_cli)
                 # 开始拨号
                 try:
-                    proxy_ip = pppoe(ssh_cli)
+                    proxy_ip = pppoe(ssh_cli, values['cmd'])
                 except Exception:
                     # 依然有问题，不做操作
                     pass
@@ -48,6 +52,8 @@ def solve_badhosts():
     t4.start()
 
 
+#TODO:错误主机，如ssh账户密码错误的，从redis和配置文件同时读取后要处理一下。
+
 def adsl_switch_ip():
     # 定时拨号的主机是从正常的主机中获取的。
     hosts_info_dict = RedisClient(list_key='goodhosts').all()
@@ -55,11 +61,15 @@ def adsl_switch_ip():
     for key, values in hosts_info_dict.items():
         with paramiko.SSHClient() as ssh_cli:
             ssh_cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh_cli.connect(hostname=values['host'], username=values['username'],
-                            password=values['password'],
-                            port=values['port'])
             try:
-                proxy_ip = pppoe(ssh_cli)
+                ssh_cli.connect(hostname=values['host'], username=values['username'],
+                                password=values['password'],
+                                port=values['port'])
+            except paramiko.ssh_exception.NoValidConnectionsError as e:
+                logger.error(f'主机：{key}，配置有问题，请手动修复并重启程序! {e}')
+                return False
+            try:
+                proxy_ip = pppoe(ssh_cli, values['cmd'])
             except Exception:
                 # 重新拨号得不到新IP，则移除旧IP，且从正常主机列表移除并加入问题主机列表
                 RedisClient(list_key='adslproxy').remove(key)
@@ -75,9 +85,11 @@ def adsl_switch_ip():
 
 def adsl_main():
     # hosts_manages启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
+    print('开始定时任务！')
     t1 = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
     t1.start()
     # 立刻处理问题主机
+    print("处理问题主机！")
     t2 = threading.Timer(0, solve_badhosts)
     t2.start()
 
