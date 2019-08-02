@@ -3,7 +3,7 @@
 # @Version: Python 3
 # API接口服务(每次启动程序都执行本脚本，一直执行)
 
-
+# TODO：账户校验、频率限制未完成
 import os
 import sys
 
@@ -27,7 +27,7 @@ from config.api_config import *
 from adslproxy.db import RedisClient
 
 app = Flask(__name__)
-redis_cli = RedisClient('adslproxy')
+redis_cli = RedisClient(list_key='adslproxy')
 
 api_list = {
     'random': u'random get an proxy',
