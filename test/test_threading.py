@@ -13,6 +13,9 @@ def run():
     time.sleep(2)
     print('当前线程的名字是： ', threading.current_thread().name)
     time.sleep(3)
+    t = threading.Thread(target=run)
+    t.start()
+
 
 
 def task():
@@ -22,7 +25,6 @@ def task():
 
 
 if __name__ == '__main__':
-
     start_time = time.time()
 
     print('这是主线程：', threading.current_thread().name)

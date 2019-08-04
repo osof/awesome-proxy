@@ -118,17 +118,13 @@ def run_task(key, values):
                             port=values['port'])
         except paramiko.ssh_exception.NoValidConnectionsError as e:
             logger.error(f'主机：{key}，配置有问题，请手动修复并重启程序! {e}')
+            values['problem'] = 'init_error'
+            RedisClient(list_key='badhosts').set(key, json.dumps(values))
             return False
         # 检查squid
         check_host(ssh_cli)
         # 开始拨号
-        try:
-            proxy_ip = pppoe(ssh_cli, values['cmd'])
-        except Exception:
-            # 记录初始化错误的主机（只有启动时出现错误的主机才算是初始化错误）
-            values['problem'] = 'init_error'
-            RedisClient(list_key='badhosts').set(key, json.dumps(values))
-            return False
+        proxy_ip = pppoe(ssh_cli, values['cmd'])
         # 存储到Redis
         RedisClient(list_key='adslproxy').set(key, f'{proxy_ip}:{PROXY_PORT}')
         RedisClient(list_key='goodhosts').set(key, json.dumps(values))
