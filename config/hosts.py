@@ -1,34 +1,30 @@
 # adsl主机配置文件
 
-# 暂定格式
+"""
+说明：
+1、主机名、组名都是唯一的，不要重复，如：myadsl1、myadsl2
+2、目前只支持root用户执行任务，所以username必须为root，否则可能初始化失败！
+3、cmd是拨号程序的开始拨号和停止拨号命令；各家服务商有细微区别，需要手动填写。
+"""
 
 # ADSL主机列表
-# HOSTS_LIST111 = [
-#     {
-#         "name": 'my_adsl1',
-#         "host": '123.456.678.789',
-#         "port": 22,
-#         "username": 'root',
-#         "password": '123456',
-#         'switch_time': 60
-#     },
-#     {
-#         "name": 'my-adsl2',
-#         "host": '123.456.678.789',
-#         "port": 22,
-#         "username": 'root',
-#         "password": '123456',
-#         'switch_time': 60
-#     }
-# ]
-
 HOSTS_GROUP = {
     "group1": {  # 分组1
-        "ssh2": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 44, "switch_time": 60},
-        "ssh3": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 55, "switch_time": 60},
-        "ssh4": {"host": "127.0.0.1", "username": "root", "password": "lanlan", "port": 66, "switch_time": 60},
+        "myadsl1": {
+                    "host": "114.115.166.201",
+                    "username": "root",
+                    "password": "zzwul2018",
+                    "port": 22,
+                    "cmd": ('adsl-start', 'adsl-stop')
+                 },
+        "myadsl2": {
+                    "host": "114.115.166.202",
+                    "username": "root",
+                    "password": "zzwul2018",
+                    "port": 22,
+                    "cmd": ('adsl-start', 'adsl-stop')
+                 },
+
     },
 }
 
-# for i in HOSTS_LIST['group3'].values():
-#     print(type(i), i)
