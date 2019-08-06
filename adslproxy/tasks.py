@@ -60,8 +60,7 @@ def solve_badhosts():
             RedisClient(list_key='badhosts').remove(key)
             RedisClient(list_key='goodhosts').set(key, json.dumps(values))
     # 间隔300秒 时间再次执行
-    t4 = threading.Timer(300, solve_badhosts)
-    t4.start()
+    threading.Timer(300, solve_badhosts).start()
 
 
 def adsl_switch_ip():
@@ -86,23 +85,50 @@ def adsl_switch_ip():
             # 存储到Redis
             RedisClient(list_key='adslproxy').set(key, f'{proxy_ip}:{PROXY_PORT}')
     # 间隔ADSL_SWITCH_TIME 时间再次执行
-    t3 = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
+    threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip).start()
+
+
+# TODO:这里要测试一下
+def update_user_info():
+    # 更新API用户信息(AB集切换)
+    a_or_b = RedisClient(list_key='ab_set').get('a_or_b')
+    if a_or_b == "a":
+        for group in USER:
+            for user_info in USER[group].values():
+                RedisClient(list_key='userinfo_b').set(user_info['username'], user_info['password'])
+        RedisClient(list_key='ab_set').set('a_or_b', 'b')
+        RedisClient(list_key='userinfo_a').delete()
+    elif a_or_b == "b":
+        for group in USER:
+            for user_info in USER[group].values():
+                RedisClient(list_key='userinfo_a').set(user_info['username'], user_info['password'])
+        RedisClient(list_key='ab_set').set('a_or_b', 'a')
+        RedisClient(list_key='userinfo_b').delete()
+    # 间隔60秒 时间再次执行
+    threading.Timer(60, update_user_info).start()
+
+
+def tasks_main():
+    # hosts_manages启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
+    t2 = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
+    t2.start()
+    # 立刻处理问题主机
+    print("处理问题主机！")
+    t3 = threading.Timer(0, solve_badhosts)
     t3.start()
 
 
-def adsl_main():
-    # hosts_manages启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
-    print('开始定时任务！')
-    t1 = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
-    t1.start()
-    # 立刻处理问题主机
-    print("处理问题主机！")
-    t2 = threading.Timer(0, solve_badhosts)
-    t2.start()
-
-
 if __name__ == "__main__":
+    # 清空Redis中的数据
+    RedisClient(list_key='adslproxy').delete()
+    RedisClient(list_key='goodhosts').delete()
+    RedisClient(list_key='badhosts').delete()
+    RedisClient(list_key='userinfo').delete()
+    # 定时更新用户账户
+    RedisClient(list_key='ab_set').set('a_or_b', 'b')  # 启动初始化要设置一下，防止key不存在报错。
+    t1 = threading.Timer(0, update_user_info)
+    t1.start()
     # hosts_init启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
     hosts_init()  # join线程阻塞（配置环境需要时间，只花最慢一台机器的时间）
     # 开始定时拨号任务，子线程开始等待，不影响下面执行
-    adsl_main()
+    tasks_main()

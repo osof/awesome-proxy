@@ -20,6 +20,7 @@ class RedisClient(object):
         self.db = redis.StrictRedis(host=host, port=port, password=password, decode_responses=True)
         self.list_key = list_key
 
+
     def set(self, name, proxy):
         """
         设置代理

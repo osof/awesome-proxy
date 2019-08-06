@@ -6,6 +6,7 @@
 
 import time
 from config.api_config import USER, SECRET_KEY
+from adslproxy.db import RedisClient
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired, BadSignature, BadData
 
@@ -17,53 +18,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////user_info.db"
-
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.login_view = 'login'
 login_manager.init_app(app)
 
-
-db = SQLAlchemy(app)
-
-
-class Users(UserMixin, db.Model):
-    # 定义数据库结构
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(64), unique=True, index=True)
-    username = db.Column(db.String(64), unique=True, index=True)
-    password_hash = db.Column(db.String(128))
-
-    @staticmethod
-    def init_user():
-        # 先删除所有表
-        db.drop_all()
-        # 创建表
-        db.create_all()
-        # 写入用户账户信息
-        print('创建用户')
-        for group in USER:
-            for user_info in USER[group].values():
-                _user = Users()
-                _user.user_id = time.time()
-                _user.username = user_info['username']
-                _user.password = user_info['password']
-                db.session.add(_user)
-                db.session.commit()
-
-    @property
-    def password(self):
-        raise AttributeError('password is not readable attribute')
-
-    @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def verify_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
+redis_cli = RedisClient()
 
 
 
@@ -181,3 +141,4 @@ if __name__ == '__main__':
     Users.init_user()
     app.run(host='0.0.0.0', port=5000, debug=True)
 
+# TODO：未完成！

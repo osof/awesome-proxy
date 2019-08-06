@@ -132,10 +132,6 @@ def run_task(key, values):
 
 
 def hosts_init():
-    # 清空Redis中的数据
-    RedisClient(list_key='adslproxy').delete()
-    RedisClient(list_key='goodhosts').delete()
-    RedisClient(list_key='badhosts').delete()
     # 一启动先拨号一次号，保存所有主机的代理IP
     # 主机管理(启动程序时会检查并配置所有主机)
     thread_list = []
