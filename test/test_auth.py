@@ -22,9 +22,13 @@ from flask import jsonify, request, abort, g
 app = Flask(__name__)
 # flask的跨域解决
 CORS(app, supports_credentials=True)
-# 可以获取config.py的内容
 db = SQLAlchemy(app)
 auth = HTTPBasicAuth()
+
+
+db.create_all() #创建表
+
+
 
 
 class User(db.Model):
@@ -61,7 +65,6 @@ class User(db.Model):
 
 
 
-db.create_all() #创建表
 
 
 @app.route('/api/register', methods=['POST'])
