@@ -1,12 +1,13 @@
 # awesome-proxy
 一款基于ADSL拨号主机构建的高可用、高性能、高匿名代理池！
 
+
+
+1、修改配置
+2、构建镜像、启动容器
+3、使用
+
 **一次构建，长久使用，免维护**
-
----
-# 架构图
-![image](https://github.com/osof/awesome-proxy/blob/master/%E6%A1%86%E6%9E%B6%E5%9B%BEv1.png)
-
 
 ---
 # OS支持
@@ -18,7 +19,14 @@
 
 
 ---
+# 架构图
+![image](https://github.com/osof/awesome-proxy/blob/master/%E6%A1%86%E6%9E%B6%E5%9B%BEv1.png)
+
+
+
+---
 # 快速开始
+## 部署
 ```bash
 # 说明
 可以在本地环境跑容器或者IDE中执行；也可以在云服务器上运行。
@@ -47,6 +55,134 @@ cd config # 并修改配置
 docker run -idt --name [my_adsl] --restart=always -p xxx:xxx [you_images_tag_name]
 
 ```
+
+---
+## 使用
+### 验权
+```
+POST /api/v1/token
+json: { "username": "admin", "password": "123456" }
+
+
+验证成功返回token（5小时有效）
+{"status": "200", "token": "token_str"}
+
+验证失败返回错误信息
+{"status": "403", 'error': 'Unauthorized access'}
+
+```
+
+### 代理API
+
+**说明**
+* 为方便用户使用，返回的代理是字典结构，用户只需loads一下即可直接使用，省去拼接字符串环节。
+* 操作成功返回对应信息，操作失败返回错误信息（部分接口含状态码）
+* 本程序只是为了方便用户，减少代码量！不是特别重要的部分会尽量简化状态信息。
+
+---
+#### 查看API列表
+```
+POST /api/v1/index
+提交json: { "token": "token_str"}
+
+---------------------------------
+操作成功返回： API列表
+
+操作失败返回：
+Token过期：{"status": "403", 'error': 'Unauthorized access'}
+```
+
+---
+#### 随机获取一个代理的值
+```
+POST /api/v1/random
+提交json: { "token": "token_str"}
+
+---------------------------------
+操作成功返回：{ http : "http://123.456.678.789:3100" }
+
+操作失败返回：
+Token过期：{"status": "403", 'error': 'Unauthorized access'}
+没有代理可用：{"status": "500", 'error': 'No proxy available'}
+```
+
+---
+#### 获取一个代理的详细信息
+```
+POST /api/v1/proxies
+提交json: { "token": "token_str"}
+
+---------------------------------
+操作成功返回：{ "status": "200", "name": "myadsl1", "proxy": "{http : 'http://123.456.678.789:3100'}" }
+
+操作失败返回：
+Token过期：{"status": "403", 'error': 'Unauthorized access'}
+没有代理可用：{"status": "500", 'error': 'No proxy available'}
+```
+
+---
+#### 获取所有代理
+```
+POST /api/v1/all
+提交json: { "token": "token_str"}
+
+---------------------------------
+操作成功返回：{ {http : 'http://123.456.678.789:3100'},  {http : 'http://321.543.765.987:3100'}}
+
+操作失败返回：
+Token过期：{"status": "403", 'error': 'Unauthorized access'}
+没有代理可用：{"status": "500", 'error': 'No proxy available'}
+
+```
+
+
+---
+#### 代理数量统计
+```
+POST /api/v1/counts
+提交json: { "token": "token_str"}
+
+---------------------------------
+操作成功返回：{ "status": "200", "counts": "代理数量（没有代理则为0）" }
+
+操作失败返回：
+Token过期：{"status": "403", 'error': 'Unauthorized access'}
+```
+
+
+---
+#### 获取机器名称
+```
+POST /api/v1/names
+提交json: { "token": "token_str"}
+
+---------------------------------
+操作成功返回：{ "myadsl1", "myadsl2", "myadsl3"}
+
+操作失败返回：
+Token过期：{"status": "403", 'error': 'Unauthorized access'}
+没有代理可用：{"status": "500", 'error': 'No proxy available'}
+```
+
+
+---
+#### 删除一个代理
+```
+POST /api/v1/delete
+提交json: { "token": "token_str", "proxy_name": "myadsl1" }
+
+
+---------------------------------
+操作成功返回：{"status": "200", 'delete': 'Success'}
+
+操作失败返回：
+Token过期：{"status": "403", 'error': 'Unauthorized access'}
+没有代理可用：{"status": "500", 'delete': 'Fail'}
+
+```
+
+
+
 
 ---
 # 其他

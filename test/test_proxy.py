@@ -42,8 +42,8 @@ def test_porxy():
     print('本机外网IP为：', os.popen('curl http://members.3322.org/dyndns/getip').read())
 
 
-# if __name__ == '__main__':
-#     test_porxy()
+if __name__ == '__main__':
+    test_porxy()
 
 ######################################
 
@@ -64,11 +64,11 @@ def createHeader():
     return headers
 
 
-if __name__ == '__main__':
-    headers = createHeader()
-    html = requests.get(url3, headers=headers, proxies=proxy)
-    print(html.text)
-    import re
-
-    sss = re.findall('clientIp = "(.*?)";', html.text)
-    print(sss)
+# if __name__ == '__main__':
+#     headers = createHeader()
+#     html = requests.get(url3, headers=headers, proxies=proxy)
+#     print(html.text)
+#     import re
+#
+#     sss = re.findall('clientIp = "(.*?)";', html.text)
+#     print(sss)

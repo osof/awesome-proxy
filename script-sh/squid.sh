@@ -49,8 +49,16 @@ init_sys(){
         if [ -e /etc/sysctl.conf ]; then
             # 如果值本身就为1，则不会被修改
             sed -i "s/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_syncookies = 0/net.ipv4.tcp_syncookies = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_tw_reuse = 0/net.ipv4.tcp_tw_reuse = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_tw_recycle = 0/net.ipv4.tcp_tw_recycle = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_fin_timeout = 60/net.ipv4.tcp_fin_timeout = 30/g" /etc/sysctl.conf
         else
             echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_syncookies = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_tw_reuse = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_tw_recycle = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_fin_timeout = 30' >> /etc/sysctl.conf
         fi
     fi
     if [ "${PM}" == 'apt' ]; then
@@ -59,12 +67,20 @@ init_sys(){
         if [ -e /etc/sysctl.conf ]; then
             # 如果值本身就为1，则不会被修改
             sed -i "s/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_syncookies = 0/net.ipv4.tcp_syncookies = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_tw_reuse = 0/net.ipv4.tcp_tw_reuse = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_tw_recycle = 0/net.ipv4.tcp_tw_recycle = 1/g" /etc/sysctl.conf
+            sed -i "s/net.ipv4.tcp_fin_timeout = 60/net.ipv4.tcp_fin_timeout = 30/g" /etc/sysctl.conf
         else
             echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_syncookies = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_tw_reuse = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_tw_recycle = 1' >> /etc/sysctl.conf
+            echo 'net.ipv4.tcp_fin_timeout = 30' >> /etc/sysctl.conf
         fi
     fi
+    /sbin/sysctl -p
 }
-
 
 
 yum_squid(){
@@ -181,3 +197,9 @@ case "${1}" in
     echo "请使用 $0 [install|uninstall|restart] 执行脚本！"
     ;;
 esac
+
+
+# 内核配置参考资料：https://blog.csdn.net/he_jian1/article/details/40787269
+# squid参考资料：https://blog.csdn.net/lucien_cc/article/details/7920510
+# http://www.squid-cache.org/Versions/v3/3.5/cfgman/
+
