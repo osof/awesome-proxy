@@ -22,10 +22,10 @@ sys.path.append(os.path.join(WORK_DIR, 'config'))
 
 import time
 from adslproxy.db import RedisClient
-from config.api_config import API_HOST, API_PORT
+from config.api_config import API_HOST, API_PORT, PROXY_USER, PROXY_PASSWORD, PROXY_PORT
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired, BadSignature, BadData
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request, abort, url_for
 
 app = Flask(__name__)
 redis_cli = RedisClient(list_key='adslproxy')
@@ -90,6 +90,15 @@ def validateToken(token):
     return {'code': 200, 'userid': data['userid'], 'message': f"user({data['userid']}) logged in by token."}
 
 
+def helper_proxy(proxy):
+    proxyMeta = f"http://{PROXY_USER}:{PROXY_PASSWORD}@{proxy}:{PROXY_PORT}"
+    proxy = {
+        "http": proxyMeta,
+        "https": proxyMeta,
+    }
+    return proxy
+
+
 def check_login(flag=""):
     """
     校验token的装饰器
@@ -103,7 +112,7 @@ def check_login(flag=""):
             if data['code'] == 200:
                 return func()
             else:
-                return {"status": "403", 'error': 'Unauthorized access'}
+                return jsonify({"status": "403", 'error': 'Unauthorized access'})
 
         return _check_login
 
@@ -111,15 +120,15 @@ def check_login(flag=""):
 
 
 ##########################################
-api_list = {
-    'login': u'Verify and get the token',
-    'random': u'random get an proxy',
-    'proxies': u'get all proxy from proxy pool',
-    'delete': u'delete an unable adsl proxy, like: delete/adsl_name=adsl1',
-    'counts': u'proxy counts',
-    'names': u'all ADSL client name',
-    'all': u'all ADSL client name and proxy'
-}
+# api_list = {
+#     'login': u'Verify and get the token',
+#     'random': u'random get an proxy',
+#     'proxies': u'get all proxy from proxy pool',
+#     'delete': u'delete an unable adsl proxy, like: delete/adsl_name=adsl1',
+#     'counts': u'proxy counts',
+#     'names': u'all ADSL client name',
+#     'all': u'all ADSL client name and proxy'
+# }
 
 
 @app.route('/api/v1/login', methods=['POST'])
@@ -131,6 +140,8 @@ def login():
         "password":"12345678"
     }
     """
+    if request.headers['Content-Type'] != 'application/json':
+        return jsonify({"status": "400", 'error': '请使用 Json 格式传递用户名和密码'}), 500
     json_data = request.get_json()
     username = json_data.get('username')
     password = json_data.get('password')
@@ -140,19 +151,26 @@ def login():
     # 这里使用了redis做AB数据集切换（账户密码是定时从配置文件读取并更新的），redis方法是自己封装的。
     list_key = RedisClient(list_key='ab_set').get('a_or_b')
     if RedisClient(list_key=list_key).get(username) == password:
-        return genTokenSeq(username)
+        token = genTokenSeq(username)
+        return jsonify(token)
     else:
-        abort(400)
+        return jsonify({"status": "400", 'error': '请传递配置文件中正确的用户名和密码'}), 500
+        # abort(400)
 
 
 @app.route('/api/v1/index', methods=['POST'], endpoint='index')
 @check_login()
 def index():
     # 查看API列表
-    html = ''
-    for key, values in api_list.items():
-        html += f'<a href={key}>{values}</a><br><br>'
-    return html, 200
+    # html = ''
+    # for key, values in api_list.items():
+    #     html += f'<a href={key}>{values}</a><br><br>'
+    # return html, 200
+    api_url = {}
+    for api in app.url_map._rules_by_endpoint.keys():
+        if api != 'static':
+            api_url[api] = url_for(api, _external=True)
+    return jsonify(api_url)
 
 
 @app.route('/api/v1/random', methods=['POST'], endpoint='random')
@@ -161,7 +179,8 @@ def random():
     # 随机获取一个代理的值
     proxy = redis_cli.random()
     if proxy:
-        return jsonify({'http': f"http://{proxy}"}), 200
+        proxy = helper_proxy(proxy)
+        return jsonify(proxy), 200
     else:
         return jsonify({"status": "500", 'error': 'No proxy available'}), 500
 
@@ -175,7 +194,7 @@ def get_proxies():
     if proxy:
         proxies['status'] = "200"
         proxies['name'] = proxy[0]
-        proxies['proxy'] = {'http': f"http://{proxy[1]}"}
+        proxies['proxy'] = helper_proxy(proxy[1])
         return jsonify(proxies), 200
     else:
         return jsonify({"status": "500", 'error': 'No proxy available'}), 500
@@ -187,7 +206,7 @@ def get_all():
     # 获取所有代理
     result = redis_cli.all()
     if result:
-        proxy_list = [{'http': f"http://{values}"} for values in result.values()]
+        proxy_list = [{'http': helper_proxy(values)} for values in result.values()]
         return jsonify({"data": proxy_list}), 200
     else:
         return jsonify({"status": "500", 'error': 'No proxy available'}), 500
@@ -218,8 +237,7 @@ def delete():
     if json_data:
         proxy_name = json_data.get('proxy_name')
     if not proxy_name:
-        return '请输入正确的 adsl name'
-
+        return jsonify({"status": "500", 'delete': '请输入代理机器名称'}), 400
     try:
         result = redis_cli.remove(proxy_name)
     except Exception:
@@ -232,6 +250,9 @@ def delete():
 
 if __name__ == '__main__':
     # 启动接口
-    app.run(host=API_HOST, port=API_PORT, debug=True)
+    api_host = '192.168.2.50'
+    port = 5000
+    app.run(host=api_host, port=port, debug=True)
+    # app.run(host=API_HOST, port=API_PORT, debug=True)
     # gunicorn方式启动
     # os.system(f'gunicorn -w 4 -b {API_HOST}:{API_PORT} -k gevent api_server:app')

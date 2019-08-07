@@ -94,10 +94,10 @@ class RedisClient(object):
         随机获取代理的详细信息
         :return:
         """
-        name = ''
-        proxy = ''
         get_name = self.names()
         if get_name:
             name = random.choice(get_name)
             proxy = self.get(name)
-        return [name, proxy]
+            return [name, proxy]
+        # 测试返回
+        # return ['', '']

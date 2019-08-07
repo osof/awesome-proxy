@@ -86,7 +86,7 @@ make_docker_images(){
     # 打包镜像
     docker build -t ${1} -f ./Dockerfile .
     # 打包完成删除Dockerfile
-    #rm -f ./Dockerfile
+    rm -f ./Dockerfile
 }
 
 
