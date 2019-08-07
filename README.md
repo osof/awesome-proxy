@@ -107,7 +107,7 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 ```
 
 ---
-#### 获取一个代理的详细信息
+#### 获取一个随机代理的详细信息
 ```
 POST /api/v1/proxies
 提交json: { "token": "token_str"}
@@ -127,7 +127,7 @@ POST /api/v1/all
 提交json: { "token": "token_str"}
 
 ---------------------------------
-操作成功返回：{ {http : 'http://123.456.678.789:3100'},  {http : 'http://321.543.765.987:3100'}}
+操作成功返回：{ "data": [{http : 'http://123.456.678.789:3100'},  {http : 'http://321.543.765.987:3100'}] }
 
 操作失败返回：
 Token过期：{"status": "403", 'error': 'Unauthorized access'}

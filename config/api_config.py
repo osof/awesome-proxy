@@ -31,9 +31,9 @@ PROXY_PASSWORD = 'N2PYOnRDk5gKInqQ'
 PROXY_PORT = 3100
 
 # Redis Config
-REDIS_HOST = '127.0.0.1'
+REDIS_HOST = '114.115.166.201'
 REDIS_PORT = 6390
-REDIS_PASSWORD = '123456'
+REDIS_PASSWORD = ''
 
 
 # API Config
@@ -73,4 +73,3 @@ logging.basicConfig(
     filename='../logs/adsl_server.log',
 )
 logger = logging.getLogger("adsl")
-# logging.getLogger("chardet.charsetprober").disabled = True

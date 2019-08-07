@@ -20,7 +20,6 @@ class RedisClient(object):
         self.db = redis.StrictRedis(host=host, port=port, password=password, decode_responses=True)
         self.list_key = list_key
 
-
     def set(self, name, proxy):
         """
         设置代理
@@ -51,7 +50,7 @@ class RedisClient(object):
         :param name: 主机名称
         :return: 删除结果
         """
-        return self.db.hdel(name)
+        return self.db.hdel(self.list_key, name)
 
     def delete(self):
         """
@@ -89,3 +88,16 @@ class RedisClient(object):
         :return:
         """
         return self.db.hgetall(self.list_key)
+
+    def random_info(self):
+        """
+        随机获取代理的详细信息
+        :return:
+        """
+        name = ''
+        proxy = ''
+        get_name = self.names()
+        if get_name:
+            name = random.choice(get_name)
+            proxy = self.get(name)
+        return [name, proxy]
