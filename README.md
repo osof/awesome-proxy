@@ -3,8 +3,8 @@
 
 
 
-1. 修改配置
-2. 构建镜像、启动容器
+1. 修改配置(填写你购买的adsl主机ssh信息)
+2. 构建Docker镜像、启动容器
 3. 使用
 
 **一次构建，长久使用，免维护**
@@ -76,8 +76,20 @@ docker run -idt --name [my_adsl] --restart=always -p xxx:xxx [you_images_tag_nam
 ```
 
 ---
-## 使用
-### 验权
+## Demo
+
+
+
+---
+# API说明
+
+**说明**
+* 为方便用户使用，返回的代理是字典结构，用户只需loads一下即可直接使用，省去拼接字符串环节。
+* 操作成功返回对应信息，操作失败返回错误信息（部分接口含状态码）
+* 本程序只是为了方便用户，减少代码量！不是特别重要的部分会尽量简化状态信息。
+
+
+## 验权
 ```
 POST /api/v1/token
 json: { "username": "admin", "password": "123456" }
@@ -91,15 +103,8 @@ json: { "username": "admin", "password": "123456" }
 
 ```
 
-### 代理API
-
-**说明**
-* 为方便用户使用，返回的代理是字典结构，用户只需loads一下即可直接使用，省去拼接字符串环节。
-* 操作成功返回对应信息，操作失败返回错误信息（部分接口含状态码）
-* 本程序只是为了方便用户，减少代码量！不是特别重要的部分会尽量简化状态信息。
-
 ---
-#### 查看API列表
+## 查看API列表
 ```
 POST /api/v1/index
 提交json: { "token": "token_str"}
@@ -112,7 +117,7 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 ```
 
 ---
-#### 随机获取一个代理的值
+## 随机获取一个代理的值
 ```
 POST /api/v1/random
 提交json: { "token": "token_str"}
@@ -126,7 +131,7 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 ```
 
 ---
-#### 获取一个随机代理的详细信息
+## 获取一个随机代理的详细信息
 ```
 POST /api/v1/proxies
 提交json: { "token": "token_str"}
@@ -140,7 +145,7 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 ```
 
 ---
-#### 获取所有代理
+## 获取所有代理
 ```
 POST /api/v1/all
 提交json: { "token": "token_str"}
@@ -156,7 +161,7 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 
 
 ---
-#### 代理数量统计
+## 代理数量统计
 ```
 POST /api/v1/counts
 提交json: { "token": "token_str"}
@@ -170,7 +175,7 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 
 
 ---
-#### 获取机器名称
+## 获取机器名称
 ```
 POST /api/v1/names
 提交json: { "token": "token_str"}
@@ -185,7 +190,7 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 
 
 ---
-#### 删除一个代理
+## 删除一个代理
 ```
 POST /api/v1/delete
 提交json: { "token": "token_str", "proxy_name": "myadsl1" }

@@ -168,8 +168,7 @@ def login():
 
 
 # 说明：url后面没有加“/”,用了装饰器之后函数名会被替换，用endpoint来区分。
-@app.route('/api/v1/index', methods=['POST'], endpoint='index')
-@check_login2()
+@app.route('/', methods=['GET'], endpoint='index')
 def index():
     # 查看API列表
     api_url = {}
