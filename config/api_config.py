@@ -14,15 +14,22 @@
 USER = {
     "group1": {  # 分组1
         "admin": {
-                    "username": "admin",
-                    "password": "12345678",
-                 },
+            "username": "admin",
+            "password": "12345678",
+        },
         "guest": {
-                    "username": "xiaoming",
-                    "password": "123456",
-                 },
+            "username": "xiaoming",
+            "password": "123456",
+        },
     },
 }
+
+
+# JWT Config
+SECRET_KEY = 'PMF9IAnk16KVbUel'
+SALT = 'jR9kK3KjYDN79t6s'
+ACCESS_TOKEN_EXPIRES = 60 * 60 * 5
+REFRESH_TOKEN_EXPIRES = 60 * 60 * 6
 
 
 # 代理服务器统一账户
@@ -31,15 +38,13 @@ PROXY_PASSWORD = 'N2PYOnRDk5gKInqQ'
 PROXY_PORT = 3100
 
 # Redis Config
-REDIS_HOST = '114.115.166.201'
-REDIS_PORT = 6390
-REDIS_PASSWORD = ''
-
+REDIS_HOST = '127.0.0.1'
+REDIS_PORT = 6379
+REDIS_PASSWORD = '123456'
 
 # API Config
 API_HOST = '0.0.0.0'
 API_PORT = 8080
-SECRET_KEY = 'r449fh2ino23fh3qgh9ovejqf93q4'
 """
 整体设计：
 1、IP_INVALID_TIME： IP不能用废，本程序配置一个IP可以使用多久，之后必须更换IP，有利于多人使用IP但不被封；
@@ -54,10 +59,6 @@ SECRET_KEY = 'r449fh2ino23fh3qgh9ovejqf93q4'
 # ADSL切换IP的时间（秒），同时更新Redis（注意：每次拨号时大约要8秒左右新IP才可用，服务商限制！）
 ADSL_SWITCH_TIME = 3600 * 3
 
-
-
-
-
 # Supervisor Config
 supervisor_username = 'myadmin'
 supervisor_password = '12345678'
@@ -65,6 +66,7 @@ supervisor_port = 9005
 
 # Logging Config
 import logging
+
 logging.basicConfig(
     format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
     level=logging.ERROR,

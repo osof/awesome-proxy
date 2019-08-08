@@ -11,16 +11,9 @@
 HOSTS_GROUP = {
     "group1": {  # 分组1
         "myadsl1": {
-                    "host": "114.115.166.201",
+                    "host": "127.0.0.1",
                     "username": "root",
-                    "password": "zzwul2018",
-                    "port": 22,
-                    "cmd": ('adsl-start', 'adsl-stop')
-                 },
-        "myadsl2": {
-                    "host": "114.115.166.202",
-                    "username": "root",
-                    "password": "zzwul2018",
+                    "password": "12345678",
                     "port": 22,
                     "cmd": ('adsl-start', 'adsl-stop')
                  },

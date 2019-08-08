@@ -78,6 +78,7 @@ def adsl_switch_ip():
                 proxy_ip = pppoe(ssh_cli, values['cmd'])
             except Exception:
                 # 重新拨号得不到新IP，则移除旧IP，且从正常主机列表移除并加入问题主机列表
+                logger.error(f'{key}:拨号失败了！')
                 RedisClient(list_key='adslproxy').remove(key)
                 RedisClient(list_key='goodhosts').remove(key)
                 values['problem'] = 'adsl_error'
@@ -112,7 +113,7 @@ def tasks_main():
     t2 = threading.Timer(ADSL_SWITCH_TIME, adsl_switch_ip)
     t2.start()
     # 立刻处理问题主机
-    print("处理问题主机！")
+    # print("处理问题主机！")
     t3 = threading.Timer(0, solve_badhosts)
     t3.start()
 
@@ -129,6 +130,6 @@ if __name__ == "__main__":
     t1 = threading.Timer(0, update_user_info)
     t1.start()
     # hosts_init启动时会初始化主机，并把代理写入Redis，此处接着执行定时任务即可。
-    #hosts_init()  # join线程阻塞（配置环境需要时间，只花最慢一台机器的时间）
+    hosts_init()  # join线程阻塞（配置环境需要时间，只花最慢一台机器的时间）
     # 开始定时拨号任务，子线程开始等待，不影响下面执行
-    #tasks_main()
+    tasks_main()

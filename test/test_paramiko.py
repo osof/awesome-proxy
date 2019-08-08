@@ -1,6 +1,5 @@
 # -*-coding:utf8-*-
 # @Time   : 2019/7/29
-# @Autuor : LeoLan  mail：842632422@qq.com
 # @Version: Python 3
 #
 
@@ -22,11 +21,10 @@ SCRIPT_DIR = os.path.join(WORK_DIR, 'script-sh')
 SQUID_SH = os.path.join(SCRIPT_DIR, 'squid.sh')
 
 
-
 def depoly_monitor(host_info):
     with paramiko.SSHClient() as client:
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        #print(host_info['password'])
+        # print(host_info['password'])
         client.connect(hostname=host_info['host'], username=host_info['username'], password=host_info['password'],
                        port=host_info['port'])
 
@@ -36,7 +34,7 @@ def depoly_monitor(host_info):
 
         # with client.open_sftp() as sftp:
         #     sftp.put(SQUID_SH, '/home/123.sh')
-            #sftp.chmod('123.sh', 0o755)
+        # sftp.chmod('123.sh', 0o755)
 
         # stdin, stdout, stderr = client.exec_command('curl http://members.3322.org/dyndns/getip')
         # print(stdout.readlines())

@@ -1,96 +1,42 @@
 #!/usr/bin/env python3
 # -*-coding:utf-8-*-
-# @Autuor : LeoLan  mail：842632422@qq.com
 # @Version: Python 3
-#
+# Flask JWT 验证
 
 import time
-from config.api_config import USER, SECRET_KEY
+from adslproxy.db import RedisClient
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired, BadSignature, BadData
-
-from flask_login import LoginManager, UserMixin
 from flask import Flask, jsonify, request, abort
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = SECRET_KEY
 
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////user_info.db"
-
-login_manager = LoginManager()
-login_manager.session_protection = 'strong'
-login_manager.login_view = 'login'
-login_manager.init_app(app)
-
-
-db = SQLAlchemy(app)
-
-
-class Users(UserMixin, db.Model):
-    # 定义数据库结构
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(64), unique=True, index=True)
-    username = db.Column(db.String(64), unique=True, index=True)
-    password_hash = db.Column(db.String(128))
-
-    @staticmethod
-    def init_user():
-        # 先删除所有表
-        db.drop_all()
-        # 创建表
-        db.create_all()
-        # 写入用户账户信息
-        print('创建用户')
-        for group in USER:
-            for user_info in USER[group].values():
-                _user = Users()
-                _user.user_id = time.time()
-                _user.username = user_info['username']
-                _user.password = user_info['password']
-                db.session.add(_user)
-                db.session.commit()
-
-    @property
-    def password(self):
-        raise AttributeError('password is not readable attribute')
-
-    @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def verify_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-
-
+# 用于存储已经保存的账户信息
+redis_cli = RedisClient()
 
 #############################################################
-secret_key = 'hardtoguess'
-salt = 'hardtoguess'
-access_token_expires_in = 1800
-refresh_token_expires_in = 86400
+secret_key = 'PMF9IAnk16KVbUel'
+salt = 'jR9kK3KjYDN79t6s'
+access_token_expires_in = 60 * 60 * 5
+refresh_token_expires_in = 60 * 60 * 6
 
 
 def genTokenSeq(user):
+    """
     # 生成token
-    u = Users.query.filter_by(username=user).first()
-    if u:
-        userid = u.id
-    else:
-        return {'code': 422, 'message': '用户不存在'}
+    :param user: 输入用户名
+    :return: 两个token
+    """
     access_token_gen = Serializer(secret_key=secret_key, salt=salt, expires_in=access_token_expires_in)
     refresh_token_gen = Serializer(secret_key=secret_key, salt=salt, expires_in=refresh_token_expires_in)
-    timtstamp = time.time()
+    timestamp = time.time()
     access_token = access_token_gen.dumps({
-        "userid": userid,
-        "iat": timtstamp
+        "userid": user,
+        "iat": timestamp
     })
     refresh_token = refresh_token_gen.dumps({
-        "userid": userid,
-        "iat": timtstamp
+        "userid": user,
+        "iat": timestamp
     })
 
     data = {
@@ -103,71 +49,70 @@ def genTokenSeq(user):
 
 
 def validateToken(token):
+    """
     # 解析token
+    :param token: 输入toke
+    :return: 解析结果
+    """
     s = Serializer(secret_key=secret_key, salt=salt)
     try:
         data = s.loads(token)
     except SignatureExpired:
-        msg = 'toekn expired'
-        return {'code': 401, 'error_code': 'auth_01', 'message': msg}
+        return jsonify({'code': 401, 'message': 'toekn expired'})  # token过期
     except BadSignature as e:
         encoded_payload = e.payload
         if encoded_payload is not None:
             try:
                 s.load_payload(encoded_payload)
             except BadData:
-                msg = 'token tampered'
-                return {'code': 401, 'error_code': 'auth_02', 'message': msg}
-        msg = 'badSignature of token'
-        return {'code': 401, 'error_code': 'auth_03', 'message': msg}
-    except:
-        msg = 'wrong token with unknown reason'
-        return {'code': 401, 'error_code': 'auth_04', 'message': msg}
+                return jsonify({'code': 401, 'message': 'token tampered'})  # token篡改
+        return jsonify({'code': 401, 'message': 'badSignature of token'})  # 签名有误
+    except Exception:
+        return jsonify({'code': 401, 'message': 'wrong token with unknown reason'})  # 令牌错误
 
     if 'userid' not in data:
-        msg = 'illegal payload inside'
-        return {'code': 401, 'error_code': 'auth_05', 'message': msg}
-    msg = 'user(' + str(data['userid']) + ') logged in by token.'
-    userId = data['userid']
-    return {'code': 200, 'error_code': 'auth_00', 'message': msg, 'userid': userId}
-
+        return jsonify({'code': 401, 'message': 'illegal payload inside'})  # 非法载荷
+    return jsonify({'code': 200, 'userid': data['userid'], 'message': f"user({data['userid']}) logged in by token."})
 
 
 ###############################################################
 # API
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return Users.query.get(int(user_id))
-
-
 @app.route('/login', methods=['POST'])
 def login():
+    """
+    客户端发送json过来
+    {
+        "username":"admin",
+        "password":"12345678"
+    }
+    """
     json_data = request.get_json()
-    print('&&&&&&&&&&&&&&&&&&&', json_data)
     username = json_data.get('username')
     password = json_data.get('password')
     if username is None or password is None:
-        abort(400)  # missing arguments
-    if Users.query.filter_by(username=username).first() is not None:
-        abort(400)  # existing user
-
-    print('开始查询用户')
-    user = Users.query.filter_by(username=username).first()
-    print('查询到用户信息', user)
-    return genTokenSeq(user)
-
+        abort(400)
+    # 这里校验账户是否合法，我这里用来redis简单对比；关系型数据库需要自行修改。
+    # 这里使用了redis做AB数据集切换（账户密码是定时从配置文件读取并更新的），redis方法是自己封装的。
+    list_key = RedisClient(list_key='ab_set').get('a_or_b')
+    if RedisClient(list_key=list_key).get(username) == password:
+        return genTokenSeq(username)
+    else:
+        abort(400)
 
 
 @app.route('/', methods=['POST'])
 def index():
+    """
+    客户端发送json过来
+    {
+        "token":"token-str",
+    }
+    """
     json_data = request.get_json()
     print(json_data)
     token = ''
     if json_data:
         token = json_data.get('token')
-        print("获取到的token", token)
     else:
         abort(400)
     if token:
@@ -178,6 +123,4 @@ def index():
 
 
 if __name__ == '__main__':
-    Users.init_user()
     app.run(host='0.0.0.0', port=5000, debug=True)
-

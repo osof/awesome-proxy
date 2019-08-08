@@ -21,8 +21,9 @@ sys.path.append(os.path.join(WORK_DIR, 'adslproxy'))
 sys.path.append(os.path.join(WORK_DIR, 'config'))
 
 import time
+import wrapt
 from adslproxy.db import RedisClient
-from config.api_config import API_HOST, API_PORT, PROXY_USER, PROXY_PASSWORD, PROXY_PORT
+from config.api_config import *
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import SignatureExpired, BadSignature, BadData
 from flask import Flask, jsonify, request, abort, url_for
@@ -31,10 +32,6 @@ app = Flask(__name__)
 redis_cli = RedisClient(list_key='adslproxy')
 
 #############################################################
-secret_key = 'PMF9IAnk16KVbUel'
-salt = 'jR9kK3KjYDN79t6s'
-access_token_expires_in = 60 * 60 * 5
-refresh_token_expires_in = 60 * 60 * 6
 
 
 def genTokenSeq(user):
@@ -43,8 +40,8 @@ def genTokenSeq(user):
     :param user: 输入用户名
     :return: 两个token
     """
-    access_token_gen = Serializer(secret_key=secret_key, salt=salt, expires_in=access_token_expires_in)
-    refresh_token_gen = Serializer(secret_key=secret_key, salt=salt, expires_in=refresh_token_expires_in)
+    access_token_gen = Serializer(secret_key=SECRET_KEY, salt=SALT, expires_in=ACCESS_TOKEN_EXPIRES)
+    refresh_token_gen = Serializer(secret_key=SECRET_KEY, salt=SALT, expires_in=REFRESH_TOKEN_EXPIRES)
     timestamp = time.time()
     access_token = access_token_gen.dumps({
         "userid": user,
@@ -57,9 +54,9 @@ def genTokenSeq(user):
 
     data = {
         "access_token": str(access_token, 'utf-8'),
-        "access_token_expire_in": access_token_expires_in,
+        "access_token_expire_in": ACCESS_TOKEN_EXPIRES,
         "refresh_token": str(refresh_token, 'utf-8'),
-        "refresh_token_expire_in": refresh_token_expires_in,
+        "refresh_token_expire_in": REFRESH_TOKEN_EXPIRES,
     }
     return data
 
@@ -70,7 +67,7 @@ def validateToken(token):
     :param token: 输入toke
     :return: 解析结果
     """
-    s = Serializer(secret_key=secret_key, salt=salt)
+    s = Serializer(secret_key=SECRET_KEY, salt=SALT)
     try:
         data = s.loads(token)
     except SignatureExpired:
@@ -91,7 +88,7 @@ def validateToken(token):
 
 
 def helper_proxy(proxy):
-    proxyMeta = f"http://{PROXY_USER}:{PROXY_PASSWORD}@{proxy}:{PROXY_PORT}"
+    proxyMeta = f"http://{PROXY_USER}:{PROXY_PASSWORD}@{proxy}"
     proxy = {
         "http": proxyMeta,
         "https": proxyMeta,
@@ -99,36 +96,48 @@ def helper_proxy(proxy):
     return proxy
 
 
-def check_login(flag=""):
+# def check_login(flag=""):
+#     """
+#     校验token的装饰器
+#     """
+#     def check(func):
+#         def _check_login(*args, **kwargs):
+#             json_data = request.get_json()
+#             token = json_data.get('token')
+#             data = validateToken(token)
+#             if data['code'] == 200:
+#                 return func()
+#             else:
+#                 return jsonify({"status": "403", 'error': 'Unauthorized access'})
+#         return _check_login
+#     return check
+
+
+def check_login2(flag=""):
     """
-    校验token的装饰器
+    校验token的装饰器2
     """
 
-    def check(func):
-        def _check_login(*args, **kwargs):
-            json_data = request.get_json()
-            token = json_data.get('token')
-            data = validateToken(token)
-            if data['code'] == 200:
-                return func()
-            else:
-                return jsonify({"status": "403", 'error': 'Unauthorized access'})
-
-        return _check_login
+    @wrapt.decorator
+    def check(wrapped, instance, args, kwargs):
+        # 参数含义：
+        #
+        # - wrapped：被装饰的函数或类方法
+        # - instance：
+        #   - 如果被装饰者为普通类方法，该值为类实例
+        #   - 如果被装饰者为 classmethod 类方法，该值为类
+        #   - 如果被装饰者为类/函数/静态方法，该值为 None
+        # - args：调用时的位置参数（注意没有 * 符号）
+        # - kwargs：调用时的关键字参数（注意没有 ** 符号）
+        json_data = request.get_json()
+        token = json_data.get('token')
+        data = validateToken(token)
+        if data['code'] == 200:
+            return wrapped()
+        else:
+            return jsonify({"status": "403", 'error': 'Unauthorized access'})
 
     return check
-
-
-##########################################
-# api_list = {
-#     'login': u'Verify and get the token',
-#     'random': u'random get an proxy',
-#     'proxies': u'get all proxy from proxy pool',
-#     'delete': u'delete an unable adsl proxy, like: delete/adsl_name=adsl1',
-#     'counts': u'proxy counts',
-#     'names': u'all ADSL client name',
-#     'all': u'all ADSL client name and proxy'
-# }
 
 
 @app.route('/api/v1/login', methods=['POST'])
@@ -154,18 +163,15 @@ def login():
         token = genTokenSeq(username)
         return jsonify(token)
     else:
-        return jsonify({"status": "400", 'error': '请传递配置文件中正确的用户名和密码'}), 500
+        return jsonify({"status": "500", 'error': '请传递配置文件中正确的用户名和密码'}), 500
         # abort(400)
 
 
+# 说明：url后面没有加“/”,用了装饰器之后函数名会被替换，用endpoint来区分。
 @app.route('/api/v1/index', methods=['POST'], endpoint='index')
-@check_login()
+@check_login2()
 def index():
     # 查看API列表
-    # html = ''
-    # for key, values in api_list.items():
-    #     html += f'<a href={key}>{values}</a><br><br>'
-    # return html, 200
     api_url = {}
     for api in app.url_map._rules_by_endpoint.keys():
         if api != 'static':
@@ -174,7 +180,7 @@ def index():
 
 
 @app.route('/api/v1/random', methods=['POST'], endpoint='random')
-@check_login()
+@check_login2()
 def random():
     # 随机获取一个代理的值
     proxy = redis_cli.random()
@@ -186,7 +192,7 @@ def random():
 
 
 @app.route('/api/v1/proxies', methods=['POST'], endpoint='proxies')
-@check_login()
+@check_login2()
 def get_proxies():
     # 获取一个随机代理的详细信息
     proxy = redis_cli.random_info()
@@ -201,7 +207,7 @@ def get_proxies():
 
 
 @app.route('/api/v1/all', methods=['POST'], endpoint='all')
-@check_login()
+@check_login2()
 def get_all():
     # 获取所有代理
     result = redis_cli.all()
@@ -213,14 +219,14 @@ def get_all():
 
 
 @app.route('/api/v1/counts', methods=['POST'], endpoint='counts')
-@check_login()
+@check_login2()
 def get_counts():
     count = redis_cli.count()
     return jsonify({"status": "200", "counts": count}), 200
 
 
 @app.route('/api/v1/names', methods=['POST'], endpoint='names')
-@check_login()
+@check_login2()
 def get_names():
     names = redis_cli.names()
     if names:
@@ -230,7 +236,7 @@ def get_names():
 
 
 @app.route('/api/v1/delete', methods=['POST'], endpoint='delete')
-@check_login()
+@check_login2()
 def delete():
     proxy_name = ''
     json_data = request.get_json()
@@ -250,9 +256,6 @@ def delete():
 
 if __name__ == '__main__':
     # 启动接口
-    api_host = '192.168.2.50'
-    port = 5000
-    app.run(host=api_host, port=port, debug=True)
-    # app.run(host=API_HOST, port=API_PORT, debug=True)
+    app.run(host=API_HOST, port=API_PORT, debug=False)
     # gunicorn方式启动
     # os.system(f'gunicorn -w 4 -b {API_HOST}:{API_PORT} -k gevent api_server:app')
