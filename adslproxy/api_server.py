@@ -202,10 +202,11 @@ def get_proxies():
         proxy_name = json_data.get('proxy_name')
     if proxy_name:
         proxy = redis_cli.get(proxy_name)
-        proxies['status'] = "200"
-        proxies['name'] = proxy_name
-        proxies['proxy'] = helper_proxy(proxy)
-        return jsonify(proxies), 200
+        if proxy:
+            proxies['status'] = "200"
+            proxies['name'] = proxy_name
+            proxies['proxy'] = helper_proxy(proxy)
+            return jsonify(proxies), 200
     else:
         return jsonify({"status": "500", 'error': '找不到代理！'}), 500
 
