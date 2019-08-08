@@ -134,14 +134,14 @@ Token过期：{"status": "403", 'error': 'Unauthorized access'}
 ## 获取一个随机代理的详细信息
 ```
 POST /api/v1/proxies
-提交json: { "token": "token_str"}
+提交json: { "token": "token_str", "proxy_name": "myadsl1" }
 
 ---------------------------------
 操作成功返回：{ "status": "200", "name": "myadsl1", "proxy": "{http : 'http://123.456.678.789:3100'}" }
 
 操作失败返回：
 Token过期：{"status": "403", 'error': 'Unauthorized access'}
-没有代理可用：{"status": "500", 'error': 'No proxy available'}
+没有代理可用：{"status": "500", 'error': '找不到代理！'}
 ```
 
 ---

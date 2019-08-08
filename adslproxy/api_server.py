@@ -31,6 +31,7 @@ from flask import Flask, jsonify, request, abort, url_for
 app = Flask(__name__)
 redis_cli = RedisClient(list_key='adslproxy')
 
+
 #############################################################
 
 
@@ -194,15 +195,19 @@ def random():
 @check_login2()
 def get_proxies():
     # 获取一个随机代理的详细信息
-    proxy = redis_cli.random_info()
+    proxy_name = ''
     proxies = {}
-    if proxy:
+    json_data = request.get_json()
+    if json_data:
+        proxy_name = json_data.get('proxy_name')
+    if proxy_name:
+        proxy = redis_cli.get(proxy_name)
         proxies['status'] = "200"
-        proxies['name'] = proxy[0]
-        proxies['proxy'] = helper_proxy(proxy[1])
+        proxies['name'] = proxy_name
+        proxies['proxy'] = helper_proxy(proxy)
         return jsonify(proxies), 200
     else:
-        return jsonify({"status": "500", 'error': 'No proxy available'}), 500
+        return jsonify({"status": "500", 'error': '找不到代理！'}), 500
 
 
 @app.route('/api/v1/all', methods=['POST'], endpoint='all')
