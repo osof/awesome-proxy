@@ -38,6 +38,8 @@
 |说明|所有动态拨号的主机或vps|支持|特征：拨号成功后可以看到一个包含了外网IP的网卡|
 |芝麻代理|芝麻VPS|不支持（服务商无动态拨号类的服务）|不是ADSL主机，且为机房IP，可用性低|
 |云立方|动态拨号VPS（非VPS主机）|支持|
+|91VPS|拨号VPS|支持|
+|www.diyavps.com迪亚网络|拨号VPS|支持|
 |其他服务商| | |未测试、欢迎补充！|
 
 
@@ -52,7 +54,7 @@
 
 ---
 # 架构图
-![image](https://github.com/osof/awesome-proxy/blob/master/%E6%A1%86%E6%9E%B6%E5%9B%BEv1.png)
+![image](framework_v1.png)
 
 
 ---
