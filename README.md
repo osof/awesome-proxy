@@ -54,7 +54,7 @@
 
 ---
 # 架构图
-![image](https://github.com/osof/awesome-proxy/blob/master/framework_v1.png)
+![框架图](framework_v1.png)
 
 
 ---
