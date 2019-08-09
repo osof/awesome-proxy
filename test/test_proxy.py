@@ -13,7 +13,11 @@ proxy_passwd = 'N2PYOnRDk5gKInqQ'
 proxy_port = 3100
 
 # 这是代理IP
-proxy = {'http': f'http://{proxy_user}:{proxy_passwd}@{proxy_host}:{proxy_port}'}
+# proxy = {'http': f'http://{proxy_user}:{proxy_passwd}@{proxy_host}:{proxy_port}'}
+
+
+proxy = {'http': f'http://{proxy_user}:{proxy_passwd}@127.0.0.1:3100' }
+
 
 url1 = 'http://members.3322.org/dyndns/getip'
 url2 = 'http://test.heroflower.top/'
