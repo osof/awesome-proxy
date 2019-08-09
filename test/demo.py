@@ -11,7 +11,7 @@ def get_data_from_post(url, data):
     """
     response = requests.post(url, json=data, timeout=10)
     if response.status_code == 200:
-        response_text = resp.json()
+        response_text = response.json()
         return response_text
     else:
         try:
@@ -40,4 +40,4 @@ random_proxy = get_data_from_post(random_proxy_url, data)
 
 resp = requests.get(url=test_url, proxies=random_proxy, timeout=10)
 if resp.status_code == 200:
-    print('代理验证成功')
+    print(resp.text)
