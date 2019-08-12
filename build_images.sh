@@ -77,8 +77,6 @@ CMD /etc/init.d/redis-server start && supervisord -c /root/awesome-proxy/config/
 EOF
 }
 
-# super 账户密码问题
-
 
 make_docker_images(){
     # 修改各种配置
