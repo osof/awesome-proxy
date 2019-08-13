@@ -68,7 +68,7 @@ ADD . /root/awesome-proxy
 
 RUN pip install -r /root/awesome-proxy/config/requirements.txt -i https://pypi.doubanio.com/simple
 
-# 目前EXPOSE端口还无法实现动态更改
+# 暴露端口
 EXPOSE ${api_port} ${redis_port} 9001
 
 # 最后的/bin/bash不能省略，其他都是后台进程，没有活跃在前台的进程容器会被终止。
